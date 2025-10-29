@@ -1,4 +1,4 @@
-# Credit Card Validator
+# Chat
 
 ![CI](https://github.com/taniachris8/chat/actions/workflows/web.yml/badge.svg)
 
