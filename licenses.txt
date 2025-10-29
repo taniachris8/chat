@@ -1,0 +1,6 @@
+Images used in this project:
+
+1. iPhone Spinner(loading.png)
+   Source: https://icons8.com/icon/34831/iphone-spinner
+   Author: Icons8
+   License: https://intercom.help/icons8-7fb7577e8170/en/articles/5534926-universal-multimedia-license-agreement-for-icons8

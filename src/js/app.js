@@ -56,6 +56,7 @@ function initWebSocket() {
 
     if (Array.isArray(data)) {
       loader.remove();
+
       chatModal.userContainer.innerHTML = "";
       data.forEach((user) => {
         const nameToDisplay =
