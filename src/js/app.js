@@ -3,12 +3,14 @@ import ChatModal from "./ChatModal";
 import UserService from "./UserService";
 import User from "./User";
 import Message from "./Message";
+import loadingIcon from "../icons/loading.png";
 
 const nicknameModal = new NicknameModal();
 const chatModal = new ChatModal();
 const userService = new UserService();
 
 let currentUser;
+let ws;
 
 nicknameModal.modal.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -17,10 +19,11 @@ nicknameModal.modal.addEventListener("submit", (e) => {
     userService.register(
       nickname,
       (newUser) => {
-        currentUser = new User(newUser.name, chatModal.userContainer);
-        currentUser.bindToDOM();
+        currentUser = newUser;
         nicknameModal.close();
         chatModal.open();
+
+        initWebSocket();
       },
       (errorMessage) => {
         nicknameModal.invalidName.classList.add("active");
@@ -29,75 +32,96 @@ nicknameModal.modal.addEventListener("submit", (e) => {
     );
   } else {
     nicknameModal.invalidName.classList.add("active");
-    nicknameModal.invalidName.textContent = "To continue enter your nickname";
+    nicknameModal.invalidName.textContent = "Enter your nickname to continue";
   }
 });
 
-const ws = new WebSocket("wss://server-for-chat-sh2y.onrender.com/ws");
-const chatContainer = document.querySelector(".chat-messages");
-let text;
+function initWebSocket() {
+  ws = new WebSocket("wss://server-for-chat-sh2y.onrender.com/ws");
 
-ws.onopen = () => {
-  console.log("Подключено к серверу");
-};
+  const chatContainer = document.querySelector(".chat-messages");
 
-chatModal.textarea.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    console.log(e.key);
-    e.preventDefault();
-    sendMessage();
-  }
-});
+  const loader = document.createElement("img");
+  loader.classList.add("loader");
+  loader.alt = "Loading";
+  loader.src = loadingIcon;
+  chatModal.userContainer.append(loader);
 
-function sendMessage() {
-  text = chatModal.textarea.value.trim();
-  if (!text) return;
-
-  const msg = {
-    type: "send",
-    user: { name: currentUser.name },
-    message: text,
-    date: Date.now(),
+  ws.onopen = () => {
+    console.log("Подключено к серверу");
   };
 
-  ws.send(JSON.stringify(msg));
-  chatModal.textarea.value = "";
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (Array.isArray(data)) {
+      loader.remove();
+      chatModal.userContainer.innerHTML = "";
+      data.forEach((user) => {
+        const nameToDisplay =
+          currentUser && user.id === currentUser.id ? "You" : user.name;
+        const userEl = new User(
+          nameToDisplay,
+          user.id,
+          chatModal.userContainer,
+        );
+        userEl.bindToDOM();
+
+        if (nameToDisplay === "You") {
+          userEl.userCheckbox.style.backgroundColor = "red";
+          userEl.userName.style.color = "red";
+        }
+      });
+
+      return;
+    }
+
+    if (data.type === "send") {
+      const { user, message, date } = data;
+      if (currentUser.id === user.id) {
+        const messageEl = new Message("You", date, message, chatContainer);
+        messageEl.bindToDOM();
+        messageEl.message.classList.add("active");
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      } else {
+        const messageEl = new Message(user.name, date, message, chatContainer);
+        messageEl.bindToDOM();
+        messageEl.message.classList.remove("active");
+      }
+    }
+  };
+
+  ws.onclose = () => {
+    currentUser.user.remove();
+  };
+
+  chatModal.textarea.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  function sendMessage() {
+    const text = chatModal.textarea.value.trim();
+    if (!text) return;
+
+    const msg = {
+      type: "send",
+      user: { name: currentUser.name, id: currentUser.id },
+      message: text,
+      date: Date.now(),
+    };
+
+    ws.send(JSON.stringify(msg));
+    chatModal.textarea.value = "";
+  }
+
+  window.addEventListener("beforeunload", () => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(
+        JSON.stringify({ type: "exit", user: { name: currentUser.name } }),
+      );
+    }
+  });
 }
-
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log(data);
-
-  if (Array.isArray(data)) {
-    console.log("список пользователей:", data);
-    data.forEach((user) => {
-      const userEl = new User(user.name, chatModal.userContainer);
-      userEl.bindToDOM();
-    });
-
-    return;
-  }
-
-  if (data.type === "send") {
-    const { user, message, date } = data;
-    const messageEl = new Message(
-      currentUser.name === user.name ? "You" : user.name,
-      date,
-      message,
-      chatContainer,
-    );
-    messageEl.bindToDOM();
-    if (currentUser.name === user.name)
-      messageEl.message.classList.add("active");
-  }
-};
-
-window.addEventListener("beforeunload", () => {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: "exit", user: { name: currentUser.name } }));
-  }
-});
-
-ws.onclose = () => {
-  currentUser.user.remove();
-};

@@ -1,7 +1,8 @@
 export default class User {
-  constructor(name, parentEl) {
+  constructor(name, id, parentEl) {
     this.parentEl = parentEl;
     this.name = name;
+    this.id = id;
   }
 
   bindToDOM() {
@@ -12,5 +13,8 @@ export default class User {
       <p class="user-name">${this.name}</p>
       `;
     this.parentEl.append(this.user);
+
+    this.userCheckbox = this.user.querySelector(".user-checkbox");
+    this.userName = this.user.querySelector(".user-name");
   }
 }

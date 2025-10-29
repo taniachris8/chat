@@ -108,6 +108,11 @@ button {
   overflow-y: auto;
 }
 
+.loader {
+  width: 24px;
+  height: 24px;
+}
+
 .user {
   display: flex;
   align-items: center;
@@ -123,14 +128,6 @@ button {
   border-radius: 50%;
   border: 1px solid #ccc;
   cursor: pointer;
-  background-color: green;
-}
-
-/* .user-checkbox:checked {
-  background-color: green;
-} */
-
-.user-name {
 }
 
 .chat-container {
@@ -167,27 +164,22 @@ button {
 
 .message {
   align-self: flex-start;
-  /* width: 100%; */
   padding: 10px;
 }
 
 .message.active {
-    align-self: flex-end;
+  align-self: flex-end;
 }
 
 .message.active span {
-color: red;
+  color: red;
 }
 
 .message-details {
   font-size: 10px;
-  
-}
-
-.name {
 }
 
 .message-text {
-    margin-top: 10px;
+  margin-top: 10px;
   font-size: 14px;
 }
